@@ -1,9 +1,9 @@
-node_modules/
-build/
-dist/
-npm-debug.log*
-.vscode/
-
-# JetBrains IntelliJ IDEA project files
+.vscode
 .idea
 *.iml
+npm-debug.log*
+node_modules
+package-lock.json
+build
+dist
+static
