@@ -609,10 +609,9 @@ function checkDownloadPath() {
 // Express API
 let expressApi;
 
-function startExpressApi() {
+function startExpressApi(port) {
     const express = require('express');
     const api = express();
-    const port = 9099;
 
     api.use((req, res, next) => {
         req.headers['content-type'] = 'application/json';
@@ -621,32 +620,59 @@ function startExpressApi() {
 
     api.use(express.json());
 
-    // GET /torrentList
-    api.get('/torrentList', (req, res) => {
+    // GET /torrents
+    api.get('/torrents', (req, res) => {
         const torrentList = state.saved.torrents.map(torrent => ({
             Hash: torrent.infoHash,
             Name: torrent.name,
             Status: torrent.status,
             Ready: torrent.progress.ready,
-            Progress: torrent.progress.progress,
+            Progress: (torrent.progress.progress).toFixed(2)*100,
             Downloaded: torrent.progress.downloaded,
             Size: torrent.progress.length,
             DownloadSpeed: torrent.progress.downloadSpeed,
             UploadSpeed: torrent.progress.uploadSpeed,
             Peers: torrent.progress.numPeers,
             Path: torrent.path,
-            Magnet: torrent.magnetURI,
-            test: state.saved.prefs.api
+            Magnet: torrent.magnetURI
         }));
         res.json(torrentList);
     });
 
-    // curl -s http://localhost:9099/torrentList | jq
+    // curl -s http://localhost:9099/torrents | jq
+
+    // GET /torrent/<hash>
+    api.get('/torrent/:hash', (req, res) => {
+        const { hash } = req.params;
+        hashLowerCase = hash.toLowerCase();
+        const torrent = state.saved.torrents.find(t => t.infoHash === hashLowerCase);
+        if (torrent) {
+            const torrentStatus = ({
+                Hash: torrent.infoHash,
+                Name: torrent.name,
+                Status: torrent.status,
+                Ready: torrent.progress.ready,
+                Progress: (torrent.progress.progress).toFixed(2)*100,
+                Downloaded: torrent.progress.downloaded,
+                Size: torrent.progress.length,
+                DownloadSpeed: torrent.progress.downloadSpeed,
+                UploadSpeed: torrent.progress.uploadSpeed,
+                Peers: torrent.progress.numPeers,
+                Path: torrent.path,
+                Magnet: torrent.magnetURI
+            });
+            res.json(torrentStatus);
+        } else {
+            res.status(404).json({ Response: `Torrent not found (${hashLowerCase})` });
+        }
+    });
+
+    // curl -s http://localhost:9099/torrent/e62cfb63067092bea3f952c94d1c4b1a66af866a | jq .
 
     // GET /torrentFiles/<hash>
     api.get('/torrentFiles/:hash', (req, res) => {
         const { hash } = req.params;
-        hashLowerCase = hash.toLowerCase()
+        hashLowerCase = hash.toLowerCase();
         const torrent = state.saved.torrents.find(t => t.infoHash === hashLowerCase);
         if (torrent) {
             const torrentFiles = torrent.files.map((file, index) => ({
@@ -665,10 +691,36 @@ function startExpressApi() {
 
     // curl -s http://localhost:9099/torrentFiles/e62cfb63067092bea3f952c94d1c4b1a66af866a | jq
 
-    // POST /setTorrentStatus <hash: str>
-    api.post('/setTorrentStatus', async (req, res) => {
+    // POST /pauseAllTorrents
+    api.post('/pauseAllTorrents', async (req, res) => {
+        controllers.torrentList().pauseAllTorrents();
+        const torrentList = state.saved.torrents.map(torrent => ({
+            Hash: torrent.infoHash,
+            Name: torrent.name,
+            Status: torrent.status
+        }));
+        res.json(torrentList);
+    });
+
+    // curl -s -X POST http://localhost:9099/pauseAllTorrents | jq
+
+    // POST /resumeAllTorrents
+    api.post('/resumeAllTorrents', async (req, res) => {
+        controllers.torrentList().resumeAllTorrents();
+        const torrentList = state.saved.torrents.map(torrent => ({
+            Hash: torrent.infoHash,
+            Name: torrent.name,
+            Status: torrent.status
+        }));
+        res.json(torrentList);
+    });
+
+    // curl -s -X POST http://localhost:9099/resumeAllTorrents | jq
+
+    // POST /toggleTorrent <hash: str>
+    api.post('/toggleTorrent', async (req, res) => {
         const { hash } = req.body;
-        hashLowerCase = hash.toLowerCase()
+        hashLowerCase = hash.toLowerCase();
         const torrent = state.saved.torrents.find(t => t.infoHash === hashLowerCase);
         if (torrent) {
             controllers.torrentList().toggleTorrent(torrent.infoHash);
@@ -684,12 +736,12 @@ function startExpressApi() {
         }
     });
 
-    // curl -s -X POST http://localhost:9099/setTorrentStatus -d '{"hash": "e62cfb63067092bea3f952c94d1c4b1a66af866a"}' | jq
+    // curl -s -X POST http://localhost:9099/toggleTorrent -d '{"hash": "e62cfb63067092bea3f952c94d1c4b1a66af866a"}' | jq
 
-    // POST /setFileStatus <hash: str> <index: int>
-    api.post('/setFileStatus', (req, res) => {
+    // POST /toggleTorrentFile <hash: str> <index: int>
+    api.post('/toggleTorrentFile', (req, res) => {
         const { hash, index } = req.body;
-        hashLowerCase = hash.toLowerCase()
+        hashLowerCase = hash.toLowerCase();
         const torrent = state.saved.torrents.find(t => t.infoHash === hashLowerCase);
         if (torrent) {
             controllers.torrentList().toggleTorrentFile(hashLowerCase, index);
@@ -704,12 +756,35 @@ function startExpressApi() {
         }
     });
 
-    // curl -s -X POST http://localhost:9099/setFileStatus -d '{"hash": "e62cfb63067092bea3f952c94d1c4b1a66af866a", "index": "0"}' | jq
+    // curl -s -X POST http://localhost:9099/toggleTorrentFile -d '{"hash": "e62cfb63067092bea3f952c94d1c4b1a66af866a", "index": "0"}' | jq
+    // curl -s -X POST http://localhost:9099/toggleTorrentFile -d '{"hash": "e62cfb63067092bea3f952c94d1c4b1a66af866a", "index": "1"}' | jq
+
+    // POST /toggleAllTorrentFile <hash: str>
+    api.post('/toggleAllTorrentFile', (req, res) => {
+        const { hash } = req.body;
+        const hashLowerCase = hash.toLowerCase();
+        const torrent = state.saved.torrents.find(t => t.infoHash === hashLowerCase);
+        if (torrent) {
+            for (let index = 0; index < torrent.files.length; index++) {
+                controllers.torrentList().toggleTorrentFile(hashLowerCase, index);
+            }
+            const torrentFiles = torrent.files.map((file, index) => ({
+                Index: index,
+                Name: file.name,
+                Status: torrent.selections[index] ? 'ok' : 'skip',
+            }));
+            res.json({ torrentFiles });
+        } else {
+            res.status(404).json({ Response: `Torrent not found (${hashLowerCase})` });
+        }
+    });
+
+    // curl -s -X POST http://localhost:9099/toggleAllTorrentFile -d '{"hash": "e62cfb63067092bea3f952c94d1c4b1a66af866a"}' | jq
 
     // POST /addTorrent <hash: str>
     api.post('/addTorrent', async (req, res) => {
         const { hash } = req.body;
-        hashLowerCase = hash.toLowerCase()
+        hashLowerCase = hash.toLowerCase();
         const torrent = state.saved.torrents.find(t => t.infoHash === hashLowerCase);
         if (!(torrent)) {
             controllers.torrentList().addTorrent(hashLowerCase);
@@ -725,12 +800,12 @@ function startExpressApi() {
         }
     });
 
-    // curl -s -X POST http://localhost:9099/addTorrent -d '{"hash": "E62CFB63067092BEA3F952C94D1C4B1A66AF866A"}' | jq
+    // curl -s -X POST http://localhost:9099/addTorrent -d '{"hash": "E62CFB63067092BEA3F952C94D1C4B1A66AF866A"}' | jqBAA324A7F549E8782BF5FD1FFAB4C1FD5EABDDE9
 
     // POST /deleteTorrent <hash: str>
     api.post('/deleteTorrent', (req, res) => {
         const { hash, deleteData } = req.body;
-        hashLowerCase = hash.toLowerCase()
+        hashLowerCase = hash.toLowerCase();
         const torrent = state.saved.torrents.find(t => t.infoHash === hashLowerCase);
         if (torrent) {
             controllers.torrentList().deleteTorrent(hashLowerCase, deleteData);
@@ -748,7 +823,7 @@ function startExpressApi() {
     // curl -s -X POST http://localhost:9099/deleteTorrent -d '{"hash": "E62CFB63067092BEA3F952C94D1C4B1A66AF866A", "deleteData": false}'
     // curl -s -X POST http://localhost:9099/deleteTorrent -d '{"hash": "E62CFB63067092BEA3F952C94D1C4B1A66AF866A", "deleteData": true}'
 
-    // POST saveTorrent <hash: str>
+    // // POST /saveTorrent <hash: str>
     // api.post('/saveTorrent', (req, res) => {
     //     const { hash } = req.body;
     //     hashLowerCase = hash.toLowerCase()
@@ -780,31 +855,33 @@ function stopExpressApi() {
     }
 }
 
+// // Applying settings after restart the application
 // async function checkStartApi() {
 //     await new Promise(resolve => {
 //         const checkInterval = setInterval(() => {
-//             if (state && state.saved && state.saved.prefs && state.saved.prefs.api !== undefined) {
+//             if (state.saved.prefs.api !== undefined && state.saved.prefs.port !== undefined) {
 //                 clearInterval(checkInterval);
 //                 resolve();
 //             }
 //         }, 1000);
 //     });
 //     if (state.saved.prefs.api) {
-//         startExpressApi();
+//         startExpressApi(state.saved.prefs.port);
 //     }
 // }
 // 
 // checkStartApi();
 
+// Monitoring Checkbox status to apply settings
 let statusExpressApi = undefined;
 
 async function checkStartStopApi() {
     while (true) {
         await new Promise(resolve => setTimeout(resolve, 1000));
-        if (state.saved.prefs.api !== statusExpressApi) {
+        if (state.saved.prefs.api !== statusExpressApi && state.saved.prefs.port != undefined) {
             statusExpressApi = state.saved.prefs.api;
             if (statusExpressApi) {
-                startExpressApi();
+                startExpressApi(state.saved.prefs.port);
             } else {
                 stopExpressApi();
             }

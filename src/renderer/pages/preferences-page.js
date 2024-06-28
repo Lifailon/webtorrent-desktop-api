@@ -38,6 +38,13 @@ class PreferencesPage extends React.Component {
     this.state = {
       globalTrackers
     }
+
+    // Express API
+    this.handleApiChange =
+      this.handleApiChange.bind(this)
+
+    this.handlePortChange =
+      this.handlePortChange.bind(this)
   }
 
   downloadPathSelector () {
@@ -272,6 +279,55 @@ class PreferencesPage extends React.Component {
     dispatch('updateGlobalTrackers', announceList)
   }
 
+  // Express API Enable
+
+  handleApiChange (e, isChecked) {
+    dispatch('updatePreferences', 'api', isChecked)
+  }
+  
+  setApiCheckbox () {
+    if (config.IS_PORTABLE) {
+      return
+    }
+    return (
+      <Preference>
+        <Checkbox
+          className='control'
+          checked={this.props.state.saved.prefs.api}
+          label='Enable'
+          onCheck={this.handleApiChange}
+        />
+      </Preference>
+    )
+  }
+
+  // Express API Port
+
+  handlePortChange(e) {
+    const newPort = e.target.value;
+    dispatch('updatePreferences', 'port', newPort);
+  }
+
+  setPortInput() {
+    if (config.IS_PORTABLE) {
+        return;
+    }
+    if (!(this.props.state.saved.prefs.port)) {
+      this.props.state.saved.prefs.port = 9099 // Default
+    };
+    return (
+        <Preference>
+            <TextField
+                className='control'
+                value={this.props.state.saved.prefs.port}
+                label='API Port'
+                onChange={this.handlePortChange}
+            />
+        </Preference>
+    );
+  }
+
+
   render () {
     const style = {
       color: colors.grey400,
@@ -299,6 +355,12 @@ class PreferencesPage extends React.Component {
         </PreferencesSection>
         <PreferencesSection title='Trackers'>
           {this.setGlobalTrackers()}
+        </PreferencesSection>
+        <PreferencesSection title='API for remote control'>
+          {this.setApiCheckbox()}
+        </PreferencesSection>
+        <PreferencesSection title='API port'>
+          {this.setPortInput()}
         </PreferencesSection>
       </div>
     )
