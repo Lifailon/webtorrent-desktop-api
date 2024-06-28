@@ -1,9 +1,3 @@
 .vscode
-.idea
-*.iml
-npm-debug.log*
-node_modules
-package-lock.json
 build
-dist
-static
+node_modules
