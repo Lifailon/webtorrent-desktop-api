@@ -1,5 +1,11 @@
 # WebTorrent Desktop Version History
 
+## v0.25.1 - 2024-06-29
+
+### Added
+
+- Support the `REST API` ([Lifailon](https://github.com/Lifailon))
+
 ## v0.24.0 - 2020-08-28
 
 ### Added

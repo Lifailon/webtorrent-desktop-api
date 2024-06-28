@@ -1,6 +1,6 @@
 {
   "name": "webtorrent-desktop",
-  "description": "WebTorrent, the streaming torrent client with API support. For Mac, Windows, and Linux.",
+  "description": "WebTorrent and BitTorrent client with API support for Mac, Windows, and Linux.",
   "version": "0.24.1",
   "author": {
     "name": "WebTorrent, LLC",
