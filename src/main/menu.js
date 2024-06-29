@@ -337,16 +337,6 @@ function getMenuTemplate () {
             const shell = require('./shell')
             shell.openExternal(config.TWITTER_PAGE_URL)
           }
-        },
-        {
-          type: 'separator'
-        },
-        {
-          label: 'Source api version on GitHub',
-          click: () => {
-            const shell = require('./shell')
-            shell.openExternal("https://github.com/Lifailon/webtorrent-desktop-api")
-          }
         }
       ]
     }
@@ -457,6 +447,13 @@ function getMenuTemplate () {
     template[5].submenu.push(
       {
         type: 'separator'
+      },
+      {
+        label: 'About api on GitHub',
+        click: () => {
+          const shell = require('./shell')
+          shell.openExternal("https://github.com/Lifailon/webtorrent-desktop-api")
+        }
       },
       {
         label: 'About ' + config.APP_NAME,
