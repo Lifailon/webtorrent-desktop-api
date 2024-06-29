@@ -25,7 +25,7 @@ Defualt port `9099`. When you change the port, you must disable and enable the A
 The current version implements 15 endpoints:
 
 - Method: `GET`
-   - `/stats` - Current version of the client, its settings, torrent statistics and system info
+   - `/stats` - Get a list of current client settings, torrent statistics and system information
    - `/torrents` - Get a list of added torrents, as well as download status and details
    - `/torrent/<hash>` - Get the information of the selected torrent by its info hash
    - `/torrentFiles/<hash>` - Get a list of files of the selected torrent
@@ -49,8 +49,8 @@ The current version implements 15 endpoints:
         - Data: `deleteData`: `<boolean>`
     - `/createTorrent` - Create a torrent from a file or directory with files
         - Data: `path` : `<string>`
-    - `/saveTorrentFile` - Download content `.torrent` file
-        - Data: `path` : `<string>`
+    - `/saveTorrentFile` - Download `.torrent` file
+        - Data: `hash` : `<string>`
 
 To get a list of files for further creation of a torrent from a remote Windwos system, you can use the 🔎 [Everything api](https://www.voidtools.com/support/everything/http).
 
